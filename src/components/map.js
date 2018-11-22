@@ -155,6 +155,29 @@ class MapScreen extends Component {
                         />
                     }
                 </MapView>
+                {
+                    this.props.trip.trip===null?
+                    null
+                    :
+                    <View style={styles.ambulanceDetails}>
+                        <Text style={styles.ambulanceNo}>
+                            User: {this.props.trip.trip.patient.name} 
+                        </Text>
+                        <TouchableOpacity
+                        activeOpacity={0.6}
+                        onPress={() => {
+                            RNImmediatePhoneCall.immediatePhoneCall(this.props.trip.trip.patient.contact_number);
+                        }}
+                        style={styles.bookContainer}>
+                            <Text style={styles.bookText}>
+                                Call the patient
+                            </Text>
+                        </TouchableOpacity>
+                        <Text style={styles.ambulanceNo}>
+                            Hospital: {this.props.trip.trip.hospital.name} 
+                        </Text>
+                    </View>
+                }
                 <TouchableOpacity
                     onPress={()=>{this.handleSignout()}}
                     style={styles.menu}
