@@ -16,6 +16,7 @@ import {
     endTrip,
     setCurrentTrip
 } from '../actions/tripAction';
+import { signout } from '../actions/loginAction';
 import Config from 'react-native-config'
 import { styles } from '../assets/map_styles'
 import Icon from 'react-native-vector-icons/AntDesign';
@@ -41,7 +42,7 @@ class MapScreen extends Component {
     componentDidMount() {
         this.props.watchCurrLocation();
         var self = this;
-        var checkTrip = setInterval(function(){
+        this.checkTrip = setInterval(function(){
             if(self.props.trip.trip === null){
                 self.props.getTrip(self.props.login.user.id).then(()=>{
                     for(item in self.props.trip.all_trips){
@@ -50,12 +51,17 @@ class MapScreen extends Component {
                             self.props.setCurrentTrip(self.props.trip.all_trips[item]).then(()=>{
                                 self.handleTrips();
                             })
-                            // clearInterval(checkTrip);
                         }
                     }
                 })
             }
         },5000)
+    }
+    
+    componentWillUnmount(){
+        console.log('LOGOUT LOGOUT LOGOUT LOGOUT');
+        
+        clearInterval(this.checkTrip);
     }
 
     handleTrips(){
@@ -103,6 +109,11 @@ class MapScreen extends Component {
         this.props.set_curr_region(region)
     }
 
+    handleSignout(){
+        this.props.signout();
+        Actions.pop();
+    }
+
     render() {
         console.log(this.state);
         
@@ -147,7 +158,7 @@ class MapScreen extends Component {
                     }
                 </MapView>
                 <TouchableOpacity
-                    onPress={()=>{}}
+                    onPress={()=>{this.handleSignout()}}
                     style={styles.menu}
                 >
                     <Icon
@@ -168,7 +179,8 @@ function matchDispatchToProps(dispatch) {
             getTrip: getTrip,
             flipTrip: flipTrip,
             endTrip: endTrip,
-            setCurrentTrip: setCurrentTrip
+            setCurrentTrip: setCurrentTrip,
+            signout: signout
         },
         dispatch
     );

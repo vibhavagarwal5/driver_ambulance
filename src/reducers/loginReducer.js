@@ -1,5 +1,6 @@
 import {
     SIGNIN,
+    SIGN_OUT,
     LOGIN_LOADING
 } from '../actions/types';
 
@@ -21,6 +22,10 @@ export default function (state = INITIAL_STATE, action) {
                     number_plate: action.user.number_plate,
                     token: 'Token ' + action.user.token
                 }
+            };
+        case SIGN_OUT:
+            return {
+                ...state
             };
         case LOGIN_LOADING:
             return {
