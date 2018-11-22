@@ -59,8 +59,6 @@ class MapScreen extends Component {
     }
     
     componentWillUnmount(){
-        console.log('LOGOUT LOGOUT LOGOUT LOGOUT');
-        
         clearInterval(this.checkTrip);
     }
 
