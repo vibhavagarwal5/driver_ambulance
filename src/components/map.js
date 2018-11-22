@@ -11,10 +11,10 @@ import {
     set_curr_region
 } from '../actions/locationAction';
 import {
-    bookTrip,
     getTrip,
     flipTrip,
-    endTrip
+    endTrip,
+    setCurrentTrip
 } from '../actions/tripAction';
 import Config from 'react-native-config'
 import { styles } from '../assets/map_styles'
@@ -40,27 +40,40 @@ class MapScreen extends Component {
 
     componentDidMount() {
         this.props.watchCurrLocation();
-        
-        if(this.props.trip.trip !== null){
-            if(this.props.trip.user2hosp){
-                this.setState({
-                    destination:{
-                        latitude: this.props.trip.trip.hospital[0].fields.latitude,
-                        longitude: this.props.trip.trip.hospital[0].fields.longitude
-                    },
-                    origin:{
-                        latitude: this.props.curr_coordinates.latitude,
-                        longitude: this.props.curr_coordinates.longitude
+        var self = this;
+        var checkTrip = setInterval(function(){
+            if(self.props.trip.trip === null){
+                self.props.getTrip(self.props.login.user.id).then(()=>{
+                    for(item in self.props.trip.all_trips){
+                        console.log(self.props.trip.all_trips[item].on_trip);
+                        if(self.props.trip.all_trips[item].on_trip){
+                            self.props.setCurrentTrip(self.props.trip.all_trips[item]).then(()=>{
+                                self.handleTrips();
+                            })
+                            // clearInterval(checkTrip);
+                        }
                     }
-                });
+                })
             }
-            this.handleTrips();
-        }
+        },5000)
     }
 
     handleTrips(){
         var self = this;
+        console.log(self.props.trip.trip);
+        self.setState({
+            destination:{
+                latitude: self.props.trip.trip.start_latitude,
+                longitude: self.props.trip.trip.start_longitude
+            },
+        })
         var fulltrip = setInterval(function() {
+            self.setState({
+                origin:{
+                    latitude: self.props.curr_coordinates.latitude,
+                    longitude: self.props.curr_coordinates.longitude
+                }
+            })
             if(haversine(self.state.origin, self.state.destination) < 30.0 && self.props.trip.user2hosp){
                 console.log('inside trip closure');
                 clearInterval(fulltrip);
@@ -77,71 +90,17 @@ class MapScreen extends Component {
                 self.props.flipTrip();
                 self.setState({
                     destination:{
-                        latitude: self.props.trip.trip.hospital[0].fields.latitude,
-                        longitude: self.props.trip.trip.hospital[0].fields.longitude
-                    },
-                    origin:{
-                        latitude: self.props.curr_coordinates.latitude,
-                        longitude: self.props.curr_coordinates.longitude
+                        latitude: self.props.trip.trip.hospital.latitude,
+                        longitude: self.props.trip.trip.hospital.longitude
                     }
                 });
-            }
-            if(self.props.trip.amb2user && self.props.trip.trip !== null){
-                console.log('inside amb2user');
-                
-                self.props.getTrip(self.props.trip.trip.id).then(()=>{
-                    self.setState({
-                        origin:{
-                            latitude: self.props.trip.trip.ambulance_id[0].fields.latitude,
-                            longitude: self.props.trip.trip.ambulance_id[0].fields.longitude
-                        }
-                    });
-                })
-            }
-            else if(self.props.trip.user2hosp && self.props.trip.trip !== null){
-                console.log('inside user2hosp');
-                self.props.getTrip(self.props.trip.trip.id).then(()=>{
-                    self.setState({
-                        origin:{
-                            latitude: self.props.trip.trip.ambulance_id[0].fields.latitude,
-                            longitude: self.props.trip.trip.ambulance_id[0].fields.longitude
-                        }
-                    });
-                })
-                // self.setState({
-                //     destination:{
-                //         latitude: self.props.curr_coordinates.latitude,
-                //         longitude: self.props.curr_coordinates.longitude
-                //     }
-                // });
             }
             console.log('haversine', haversine(self.state.origin, self.state.destination));
         }, 5000);
     }
-
+   
     onRegionChange(region) {
         this.props.set_curr_region(region)
-    }
-
-    bookTrip(){
-        var params={
-            patient_id: this.props.login.user.id,
-            start_latitude: this.props.curr_coordinates.latitude,
-            start_longitude: this.props.curr_coordinates.longitude
-        }
-        this.props.bookTrip(params).then(()=>{
-            this.setState({
-                origin:{
-                    latitude: this.props.trip.trip.ambulance_id[0].fields.latitude,
-                    longitude: this.props.trip.trip.ambulance_id[0].fields.longitude
-                },
-                destination:{
-                    latitude: this.props.curr_coordinates.latitude,
-                    longitude: this.props.curr_coordinates.longitude
-                }
-            });
-            this.handleTrips();
-        })
     }
 
     render() {
@@ -196,33 +155,6 @@ class MapScreen extends Component {
                         size={30}
                     />
                 </TouchableOpacity>
-                {
-                    this.props.trip.trip===null?
-                    <TouchableOpacity
-                        activeOpacity={0.6}
-                        onPress={() => {this.bookTrip()}}
-                        style={styles.bookContainer}>
-                        <Text style={styles.bookText}>
-                            Book
-                        </Text>
-                    </TouchableOpacity>
-                    :
-                    <View style={styles.ambulanceDetails}>
-                        <Text style={styles.ambulanceNo}>
-                            Ambulance No: {this.props.trip.trip.ambulance_id[0].fields.number_plate}
-                        </Text>
-                        <TouchableOpacity
-                        activeOpacity={0.6}
-                        onPress={() => {
-                            RNImmediatePhoneCall.immediatePhoneCall(this.props.trip.trip.ambulance_id[0].fields.contact_number);
-                        }}
-                        style={styles.bookContainer}>
-                            <Text style={styles.bookText}>
-                                Call the driver
-                            </Text>
-                        </TouchableOpacity>
-                    </View>
-                }
             </View>
         );
     }
@@ -233,10 +165,10 @@ function matchDispatchToProps(dispatch) {
         {
             watchCurrLocation: watchCurrLocation,
             set_curr_region: set_curr_region,
-            bookTrip: bookTrip,
             getTrip: getTrip,
             flipTrip: flipTrip,
-            endTrip: endTrip
+            endTrip: endTrip,
+            setCurrentTrip: setCurrentTrip
         },
         dispatch
     );

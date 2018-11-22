@@ -1,5 +1,5 @@
 import {
-    BOOK_TRIP,
+    CURRENT_TRIP,
     TRIP_LOADING,
     GET_TRIP,
     FLIP_TRIP,
@@ -7,7 +7,8 @@ import {
 } from '../actions/types';
 
 const INITIAL_STATE = {
-    trip:null,
+    all_trips:null,
+    trip: null,
     loading:false,
     amb2user: true,
     user2hosp: false
@@ -16,12 +17,12 @@ const INITIAL_STATE = {
 export default function (state = INITIAL_STATE, action) {
     let result = Object.assign({}, state);
     switch (action.type) {
-        case BOOK_TRIP:
+        case GET_TRIP:
             return {
                 ...result,
-                trip: action.trip
+                all_trips: action.all_trips
             };
-        case GET_TRIP:
+        case CURRENT_TRIP:
             return {
                 ...result,
                 trip: action.trip

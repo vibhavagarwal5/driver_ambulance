@@ -1,7 +1,7 @@
 import {
     API_URL,
     TRIP_LOADING,
-    BOOK_TRIP,
+    CURRENT_TRIP,
     GET_TRIP,
     FLIP_TRIP,
     END_TRIP
@@ -17,18 +17,16 @@ let {
     persistor
 } = configureStore();
 
-export const bookTrip = (body) => {
+export const getTrip = (id) => {
     return dispatch => {
-        console.log(body);
         dispatch(tripLoading(true));
         return new Promise((resolve, reject) => {
-            axios.post(API_URL + 'trip/', body, {
+            axios.get(API_URL + 'ambulance/?id='+id, {
                     headers: {
                         Authorization: store.getState().login.user.token
                     }
                 }).then((response) => {
-                    console.log('response', response);
-                    resolve(dispatch(bookTripHelper(response.data)));
+                    resolve(dispatch(getTripHelper(response.data[0].trips)));
                     dispatch(tripLoading(false));
                 })
                 .catch(error => {
@@ -39,23 +37,65 @@ export const bookTrip = (body) => {
     };
 };
 
-export const getTrip = (id) => {
+
+export const setCurrentTrip = (trip) => {
     return dispatch => {
         dispatch(tripLoading(true));
         return new Promise((resolve, reject) => {
-            axios.get(API_URL + 'trip/?id='+id, {
+            axios.get(API_URL + 'patient/?id='+trip.patient_id, {
+                headers: {
+                    Authorization: store.getState().login.user.token
+                }
+            }).then((patient) => {
+                console.log(patient);
+                axios.get(API_URL + 'hospital/?id='+trip.hospital_id, {
                     headers: {
                         Authorization: store.getState().login.user.token
                     }
-                }).then((response) => {
-                    console.log('response', response);
-                    resolve(dispatch(getTripHelper(response.data)));
-                    dispatch(tripLoading(false));
+                }).then((hospital) => {
+                    resolve(dispatch(setCurrentTripHelper(hospital.data[0],patient.data[0],trip)));
                 })
                 .catch(error => {
                     reject(handleError(error));
-                    dispatch(tripLoading(false));
                 });
+                dispatch(tripLoading(false));
+            })
+            .catch(error => {
+                reject(handleError(error));
+                dispatch(tripLoading(false));
+            });
+        })
+    };
+};
+
+export const endTrip = () => {
+    console.log(store.getState().login.user.token);
+    return dispatch => {
+        dispatch(tripLoading(true));
+        return new Promise((resolve, reject) => {
+            axios.put(API_URL + 'ambulance/complete/?id='+store.getState().login.user.id, null, {
+                headers: {
+                    Authorization: store.getState().login.user.token
+                }
+            }).then((patient) => {
+                console.log(patient);
+                axios.put(API_URL + 'trip/?id='+store.getState().trip.trip.id, null, {
+                    headers: {
+                        Authorization: store.getState().login.user.token
+                    }
+                }).then((hospital) => {
+                    console.log(hospital);
+                    resolve(dispatch(endTripHelper()));
+                })
+                .catch(error => {
+                    reject(handleError(error));
+                });
+                dispatch(tripLoading(false));
+            })
+            .catch(error => {
+                reject(handleError(error));
+                dispatch(tripLoading(false));
+            });
         })
     };
 };
@@ -67,18 +107,32 @@ function tripLoading(bool) {
     };
 }
 
-function bookTripHelper(details) {
-    return {
-        type: BOOK_TRIP,
-        trip: details
-    };
-}
-
 function getTripHelper(details) {
     return {
         type: GET_TRIP,
-        trip: details
+        all_trips: details
     };
+}
+
+export function setCurrentTripHelper(hospital_info,patient_info,trip) {
+    return {
+        type: CURRENT_TRIP,
+        trip: {
+            ...trip,
+            patient:{
+                id: patient_info.id,
+                name: patient_info.name,
+                dob: patient_info.dob,
+                contact_number: patient_info.contact_number
+            },
+            hospital:{
+                id: hospital_info.id,
+                name: hospital_info.name,
+                latitude: hospital_info.latitude,
+                longitude: hospital_info.longitude
+            }
+        }
+    }
 }
 
 export function flipTrip() {
@@ -88,9 +142,10 @@ export function flipTrip() {
     }
 }
 
-export function endTrip() {
+function endTripHelper() {
     return {
         type: END_TRIP,
+        all_trips: null,
         trip: null,
         amb2user: true,
         user2hosp: false

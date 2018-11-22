@@ -30,8 +30,8 @@ export const watchCurrLocation = () => {
                     console.log(error.message);
                 }, {
                     enableHighAccuracy: true,
-                    timeout: 2000,
-                    maximumAge: 5000,
+                    timeout: 5000,
+                    maximumAge: 6000,
                     distanceFilter: 10
                 }
             );
